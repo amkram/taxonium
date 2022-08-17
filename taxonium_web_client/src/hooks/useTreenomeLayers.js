@@ -179,7 +179,7 @@ const useTreenomeLayers = (
             hoverInfo.object.m.gene + ":" + hoverInfo.object.m.residue_pos
           ]
       ) {
-        return aaWidth * 2;
+        return aaWidth * 1.5;
       } else {
         return aaWidth;
       }
@@ -199,7 +199,7 @@ const useTreenomeLayers = (
         variation_padding,
         aaWidth,
       ],
-      getWidth: [aaWidth, hoverInfo],
+      getWidth: [aaWidth, hoverInfo, treenomeReferenceInfo],
       getColor: [treenomeReferenceInfo, colorHook, cov2Genes],
     },
     getPolygonOffset: myGetPolygonOffset,
@@ -215,6 +215,7 @@ const useTreenomeLayers = (
     id: "browser-fillin-aa",
   });
 
+  console.log(treenomeReferenceInfo);
   const main_variation_nt_common_props = {
     onHover: (info) => setHoverInfo(info),
     pickable: true,
@@ -264,7 +265,19 @@ const useTreenomeLayers = (
       return [x + ntWidth / 2, d.y[1] + variation_padding];
     },
     getWidth: (d) => {
-      return ntWidth;
+      if (
+        hoverInfo &&
+        hoverInfo.object &&
+        d.y[0] >= hoverInfo.object.y[0] &&
+        d.y[1] <= hoverInfo.object.y[1] &&
+        d.m.residue_pos === hoverInfo.object.m.residue_pos &&
+        hoverInfo.object.m.new_residue !==
+          treenomeReferenceInfo["nt"][hoverInfo.object.m.residue_pos]
+      ) {
+        return ntWidth * 2;
+      } else {
+        return ntWidth;
+      }
     },
     updateTriggers: {
       getTargetPosition: [
@@ -281,7 +294,7 @@ const useTreenomeLayers = (
         variation_padding,
         ntWidth,
       ],
-      getWidth: [ntWidth],
+      getWidth: [ntWidth, hoverInfo, treenomeReferenceInfo],
       getColor: [treenomeReferenceInfo, colorHook, cov2Genes],
     },
     getPolygonOffset: myGetPolygonOffset,
