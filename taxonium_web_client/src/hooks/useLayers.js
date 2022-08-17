@@ -40,6 +40,7 @@ const useLayers = ({
     data,
     viewState,
     colorHook,
+    hoverInfo,
     setHoverInfo,
     settings,
     treenomeReferenceInfo,

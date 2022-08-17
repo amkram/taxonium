@@ -7,6 +7,7 @@ const useTreenomeLayers = (
   data,
   viewState,
   colorHook,
+  hoverInfo,
   setHoverInfo,
   settings,
   treenomeReferenceInfo,
@@ -166,7 +167,22 @@ const useTreenomeLayers = (
       return [x + aaWidth / 2, d.y[1] + variation_padding];
     },
     getWidth: (d) => {
-      return aaWidth;
+      if (
+        hoverInfo &&
+        hoverInfo.object &&
+        d.y[0] >= hoverInfo.object.y[0] &&
+        d.y[1] <= hoverInfo.object.y[1] &&
+        d.m.gene === hoverInfo.object.m.gene &&
+        d.m.residue_pos === hoverInfo.object.m.residue_pos &&
+        hoverInfo.object.m.new_residue !==
+          treenomeReferenceInfo["aa"][
+            hoverInfo.object.m.gene + ":" + hoverInfo.object.m.residue_pos
+          ]
+      ) {
+        return aaWidth * 2;
+      } else {
+        return aaWidth;
+      }
     },
     updateTriggers: {
       getTargetPosition: [
@@ -183,7 +199,7 @@ const useTreenomeLayers = (
         variation_padding,
         aaWidth,
       ],
-      getWidth: [aaWidth],
+      getWidth: [aaWidth, hoverInfo],
       getColor: [treenomeReferenceInfo, colorHook, cov2Genes],
     },
     getPolygonOffset: myGetPolygonOffset,
