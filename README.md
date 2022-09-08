@@ -53,7 +53,7 @@ N.B. If you are citing the _tree_ displayed at Cov2Tree.org, please cite [the UC
 
 ## Structure
 
-Taxonium now consists of a number of components:
+Taxonium consists of a number of components:
 
 - [taxoniumtools](./taxoniumtools/) - a Python package that lets you easily generate Taxonium files from Usher protobuf files
 - [taxonium_web_client](./taxonium_web_client/) - the web client that is available at e.g. taxonium.org and let's you explore Taxonium files in your browser
@@ -89,6 +89,6 @@ We are very grateful to our contributors:
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
 
-Alex Kramer built the _Treenome Browser_ component within Taxonium which will be described in a forthcoming publication.
+[Alex Kramer](https://corbett-lab.github.io/People/Current/alex/) at UCSC built the _Treenome Browser_ component within Taxonium which will be described in a forthcoming publication.
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->

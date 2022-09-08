@@ -80,25 +80,6 @@ function useLocalBackend(uploaded_data, proto) {
     });
   }, [uploaded_data, proto]);
 
-  /*
-
-
-      const singleSearch = useCallback(
-        (singleSearch, boundsForQueries, setResult) => {
-
-        },
-        [processedUploadedData]
-      );
-
-      const getDetails = useCallback(
-        (node_id, setResult) => {
-
-        },
-        [processedUploadedData]
-      );
-
-
-      */
   const queryNodes = useCallback(
     async (boundsForQueries, setResult, setTriggerRefresh, config) => {
       console.log("queryNodes", boundsForQueries);
@@ -147,6 +128,11 @@ function useLocalBackend(uploaded_data, proto) {
           //   receivedData
         );
         setResult(receivedData);
+      };
+      return {
+        abortController: {
+          abort: () => console.log("no controller for local"),
+        },
       };
     },
     []

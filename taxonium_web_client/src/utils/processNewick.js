@@ -10,6 +10,10 @@ import axios from "axios";
 import reduceMaxOrMin from "./reduceMaxOrMin";
 const emptyList = [];
 
+function removeSquareBracketedComments(str) {
+  return str.replace(/\[[^\]]*\]/g, "");
+}
+
 async function do_fetch(url, sendStatusMessage, whatIsBeingDownloaded) {
   if (!sendStatusMessage) {
     sendStatusMessage = () => {};
@@ -113,10 +117,9 @@ export async function processNewick(data, sendStatusMessage) {
     message: "Parsing Newick file",
   });
 
-  // if the tree starts with "[&R]" indicating that it is rooted remove these characters so they don't mess up parsing
-  if (the_data.startsWith("[&R]")) {
-    the_data = the_data.substring(4);
-  }
+  // remove all square-bracketed comments from the string
+  the_data = removeSquareBracketedComments(the_data);
+
   const tree = kn_parse(the_data);
 
   function assignNumTips(node) {
@@ -184,7 +187,7 @@ export async function processNewick(data, sendStatusMessage) {
     node_to_mut: {},
     rootMutations: [],
     rootId: 0,
-    overwrite_config: { num_tips: total_tips },
+    overwrite_config: { num_tips: total_tips, from_newick: true },
   };
 
   return output;
@@ -199,12 +202,14 @@ export async function processMetadataFile(data, sendStatusMessage) {
   the_data = await fetch_or_extract(data, logStatusToConsole, "metadata");
 
   const lines = the_data.split("\n");
-  const output = {};
-  let separator;
+  const output = new Map();
+  let splitFunction;
+
   if (data.filename.includes("tsv")) {
-    separator = "\t";
+    splitFunction = (x) => x.split("\t");
   } else if (data.filename.includes("csv")) {
-    separator = ",";
+    // remove any double quotes
+    splitFunction = (x) => x.split(",").map((x) => x.replace(/"/g, ""));
   } else {
     sendStatusMessage({
       error: "Unknown file type for metadata, should be csv or tsv",
@@ -220,11 +225,14 @@ export async function processMetadataFile(data, sendStatusMessage) {
         message: "Parsing metadata file",
         percentage: (i / lines.length) * 100,
       });
+
+      console.log(i);
     }
     if (i === 0) {
-      headers = line.split(separator);
+      headers = splitFunction(line);
     } else {
-      const values = line.split(separator);
+      const values = splitFunction(line);
+
       let name;
       if (data.taxonColumn) {
         const taxon_column_index = headers.indexOf(data.taxonColumn);
@@ -236,7 +244,8 @@ export async function processMetadataFile(data, sendStatusMessage) {
       values.slice(1).forEach((value, j) => {
         as_obj["meta_" + headers[j + 1]] = value;
       });
-      output[name] = as_obj;
+
+      output.set(name, as_obj);
     }
   });
   sendStatusMessage({
@@ -266,7 +275,7 @@ export async function processNewickAndMetadata(data, sendStatusMessage) {
     message: "Assigning metadata to nodes",
   });
   tree.nodes.forEach((node) => {
-    const this_metadata = metadata[node.name];
+    const this_metadata = metadata.get(node.name);
     if (this_metadata) {
       Object.assign(node, this_metadata);
     } else {

@@ -3,7 +3,7 @@ import { RiAddCircleLine, RiArrowLeftUpLine } from "react-icons/ri";
 import { BiPalette } from "react-icons/bi";
 import { Button } from "../components/Basic";
 import { BsBoxArrowInUpRight, BsQuestionCircle } from "react-icons/bs";
-import { MdList } from "react-icons/md";
+import { MdArrowForward, MdArrowDownward } from "react-icons/md";
 import ReactTooltip from "react-tooltip";
 
 import { FaSearch, FaShare } from "react-icons/fa";
@@ -52,6 +52,7 @@ function SearchPanel({
   treenomeState,
   view,
   perNodeFunctions,
+  toggleSidebar,
 }) {
   const covSpectrumQuery = useMemo(() => {
     if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.node_id) {
@@ -171,7 +172,8 @@ function SearchPanel({
                   </div>
 
                   {config.enable_ns_download &&
-                    selectedDetails.nodeDetails[key] < 1000000 && (
+                    selectedDetails.nodeDetails[key] < 1000000 &&
+                    !config.from_newick && (
                       <>
                         <div className="mb-3">
                           <Button className="" onClick={handleDownloadJson}>
@@ -236,6 +238,14 @@ function SearchPanel({
     <div
       className={classNames("flex flex-col px-4 divide-y text-sm", className)}
     >
+      <button onClick={toggleSidebar}>
+        <br />
+        {window.innerWidth > 768 ? (
+          <MdArrowForward className="mx-auto w-5 h-5 sidebar-toggle" />
+        ) : (
+          <MdArrowDownward className="mx-auto w-5 h-5 sidebar-toggle" />
+        )}
+      </button>
       <div className="space-y-2 py-3">
         {config.num_tips && (
           <p className="text-gray-500 text-sm">
@@ -278,47 +288,50 @@ function SearchPanel({
             </Select>
           </label>
         )}
-        {treenomeState.genome && treenomeState.genome.length > 0 && (
-          <span>
-            <span className="text-gray-500 text-sm">Treenome Browser:</span>
-            <input
-              name="treenomeEnabled"
-              style={{ verticalAlign: "middle" }}
-              type="checkbox"
-              className="m-3 inline-block"
-              checked={settings.treenomeEnabled}
-              onChange={(event) => {
-                console.log(settings.treenomeEnabled);
-                settings.setTreenomeEnabled(!settings.treenomeEnabled);
+        {treenomeState.genome &&
+          treenomeState.genome.length > 0 &&
+          window.location &&
+          !window.location.href.includes("disabletreenome") && (
+            <span>
+              <span className="text-gray-500 text-sm">Treenome Browser:</span>
+              <input
+                name="treenomeEnabled"
+                style={{ verticalAlign: "middle" }}
+                type="checkbox"
+                className="m-3 inline-block"
+                checked={settings.treenomeEnabled}
+                onChange={(event) => {
+                  console.log(settings.treenomeEnabled);
+                  settings.setTreenomeEnabled(!settings.treenomeEnabled);
 
-                // view.setViewState({
-                //   ...view.viewState,
-                //  "browser-main": { zoom: -2, target: [500, 1000] },
-                // "browser-axis": { zoom: -2, target: [0, 1000] },
-                // });
-              }}
-            />
-            <button
-              style={{ cursor: "default" }}
-              data-tip="Display a browser with each genome's mutations alongside the tree.&nbsp;<a href='https://docs.taxonium.org/en/latest/treenome.html' class='tooltipLink' target='_blank'>Learn more</a>"
-              data-html={true}
-            >
-              <span
-                style={{ display: "inline-block", verticalAlign: "middle" }}
+                  // view.setViewState({
+                  //   ...view.viewState,
+                  //  "browser-main": { zoom: -2, target: [500, 1000] },
+                  // "browser-axis": { zoom: -2, target: [0, 1000] },
+                  // });
+                }}
+              />
+              <button
+                style={{ cursor: "default" }}
+                data-tip="Display a browser with each genome's mutations alongside the tree.&nbsp;<a href='https://docs.taxonium.org/en/latest/treenome.html' class='tooltipLink' target='_blank'>Learn more</a>"
+                data-html={true}
               >
-                <BsQuestionCircle />
-              </span>
-            </button>
-            <ReactTooltip
-              delayHide={400}
-              className="infoTooltip"
-              place="top"
-              backgroundColor="#e5e7eb"
-              textColor="#000"
-              effect="solid"
-            />
-          </span>
-        )}
+                <span
+                  style={{ display: "inline-block", verticalAlign: "middle" }}
+                >
+                  <BsQuestionCircle />
+                </span>
+              </button>
+              <ReactTooltip
+                delayHide={400}
+                className="infoTooltip"
+                place="top"
+                backgroundColor="#e5e7eb"
+                textColor="#000"
+                effect="solid"
+              />
+            </span>
+          )}
       </div>
       <div className="py-3 space-y-2">
         <div className="flex space-x-2">
@@ -400,7 +413,7 @@ function SearchPanel({
         </div>
       </div>
       {selectedDetails.nodeDetails && (
-        <div className="py-3 px-4 md:px-0 mb-0 fixed bottom-0 left-0 right-0 bg-white md:static shadow-2xl md:shadow-none">
+        <div className="py-3 px-4 md:px-0 mb-0 fixed bottom-0 left-0 right-0 bg-white md:static shadow-2xl md:shadow-none overflow-auto">
           <ListOutputModal
             ariaHideApp={false}
             nodeId={selectedDetails.nodeDetails.node_id}
@@ -498,19 +511,9 @@ function SearchPanel({
           <div>
             {selectedDetails.nodeDetails.acknowledgements && (
               <div className="text-xs mt-3  text-gray-700 mr-3">
-                <div className="mt-1">
-                  <b className="font-semibold">Originating laboratory:</b>{" "}
-                  {selectedDetails.nodeDetails.acknowledgements.covv_orig_lab}
-                </div>
-                <div className="mt-1">
-                  <b className="font-semibold">Submitting laboratory:</b>{" "}
-                  {selectedDetails.nodeDetails.acknowledgements.covv_subm_lab}
-                </div>
                 <div className="mt-1 justify">
                   <b className="font-semibold">Authors:</b>{" "}
-                  {fixAuthors(
-                    selectedDetails.nodeDetails.acknowledgements.covv_authors
-                  )}
+                  {selectedDetails.nodeDetails.acknowledgements.authors}
                 </div>
               </div>
             )}
