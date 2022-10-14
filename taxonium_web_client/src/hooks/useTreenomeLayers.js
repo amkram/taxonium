@@ -185,8 +185,6 @@ const useTreenomeLayers = (
       if (
         hoverInfo &&
         hoverInfo.object &&
-        d.y[0] >= hoverInfo.object.y[0] &&
-        d.y[1] <= hoverInfo.object.y[1] &&
         d.m.gene === hoverInfo.object.m.gene &&
         d.m.residue_pos === hoverInfo.object.m.residue_pos &&
         hoverInfo.object.m.new_residue !==
@@ -298,8 +296,6 @@ const useTreenomeLayers = (
       if (
         hoverInfo &&
         hoverInfo.object &&
-        d.y[0] >= hoverInfo.object.y[0] &&
-        d.y[1] <= hoverInfo.object.y[1] &&
         d.m.residue_pos === hoverInfo.object.m.residue_pos &&
         hoverInfo.object.m.new_residue !==
           treenomeReferenceInfo["nt"][hoverInfo.object.m.residue_pos]
