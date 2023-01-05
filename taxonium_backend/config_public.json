@@ -2,22 +2,26 @@
   "enable_ns_download": true,
   "source": "INSDC",
   "title": "Cov2Tree",
-  "customNames": { "num_tips": "Descendant sequences" },
+  "customNames": {
+    "num_tips": "Descendant sequences",
+    "meta_pango_lineage_usher": "PANGO lineage"
+  },
   "name_accessor": "name",
   "covspectrum_links": true,
   "enable_genbank_acknowledgement": true,
+  "defaultColorByField": "meta_pango_lineage_usher",
   "keys_to_display": [
     "genotype",
     "meta_date",
     "meta_genbank_accession",
-    "meta_pangolin_lineage",
+    "meta_pango_lineage_usher",
     "meta_country"
   ],
   "overlay": "TODO",
   "search_types": [
     { "name": "name", "label": "Name", "type": "text_match" },
     {
-      "name": "meta_pangolin_lineage",
+      "name": "meta_pango_lineage_usher",
       "label": "PANGO lineage",
       "type": "text_exact"
     },
@@ -35,7 +39,7 @@
   ],
   "colorBy": {
     "colorByOptions": [
-      "meta_pangolin_lineage",
+      "meta_pango_lineage_usher",
       "meta_country",
       "genotype",
       "None"

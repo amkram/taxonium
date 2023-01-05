@@ -1,7 +1,7 @@
 var express = require("express");
 var cors = require("cors");
 var compression = require("compression");
-
+var queue = require("express-queue");
 var app = express();
 var fs = require("fs");
 const path = require("node:path");
@@ -10,6 +10,8 @@ var https = require("https");
 var xml2js = require("xml2js");
 var axios = require("axios");
 var pako = require("pako");
+const URL = require("url").URL;
+const { execSync } = require("child_process");
 var importing;
 var filtering;
 var exporting;
@@ -101,8 +103,13 @@ let options;
 app.use(cors());
 app.use(compression());
 
+app.use(queue({ activeLimit: 500000, queuedLimit: 500000 }));
+
 const logStatusMessage = (status_obj) => {
   console.log("status", status_obj);
+  if (process && process.send) {
+    process.send(status_obj);
+  }
 };
 
 app.get("/", function (req, res) {
@@ -151,14 +158,43 @@ app.get("/search", function (req, res) {
   console.log("Result type was " + result.type);
 });
 
-const path_for_config = command_options.config_json;
+let path_for_config = command_options.config_json;
+let config;
+
+// Check if config passed in a valid URL
+const stringIsAValidUrl = (s) => {
+  try {
+    new URL(s);
+    return true;
+  } catch (err) {
+    return false;
+  }
+};
+
+if (stringIsAValidUrl(path_for_config)) {
+  console.log("CONFIG_JSON detected as a URL. Downloading config.");
+  // Delete any trailing /
+  path_for_config = path_for_config.endsWith("/")
+    ? path_for_config.slice(0, -1)
+    : path_for_config;
+
+  // Download file through wget
+  execSync(`wget -c ${path_for_config}`);
+
+  // Extract file name
+  const splitURL = path_for_config.split("/");
+  const fileName = splitURL[splitURL.length - 1];
+
+  path_for_config = fileName;
+
+  console.log("Config name set to", path_for_config);
+}
 
 // check if path exists
-let config;
 if (path_for_config && fs.existsSync(path_for_config)) {
   config = JSON.parse(fs.readFileSync(path_for_config));
 } else {
-  config = { title: "", source: "" };
+  config = { title: "", source: "", no_file: true };
 }
 
 app.get("/config", function (req, res) {
@@ -436,7 +472,8 @@ app.get("/nextstrain_json/:root_id", async (req, res) => {
   const json = await exporting.getNextstrainSubtreeJson(
     root_id,
     processedData.nodes,
-    config
+    config,
+    processedData.mutations
   );
   res.setHeader(
     "Content-Disposition",
@@ -450,12 +487,12 @@ const loadData = async () => {
   let supplied_object;
   if (command_options.data_file) {
     local_file = command_options.data_file;
-    //  local_file = "tfci.jsonl";
-    // Read as bytes
-    const file_data = fs.readFileSync(local_file);
+    //  create a stream from the file
+    const stream = fs.createReadStream(local_file);
+
     supplied_object = {
-      data: file_data,
-      status: "loaded",
+      stream: stream,
+      status: "stream_supplied",
       filename: local_file,
     };
   } else {
@@ -468,6 +505,15 @@ const loadData = async () => {
     supplied_object,
     logStatusMessage
   );
+
+  logStatusMessage({
+    status: "finalising",
+  });
+
+  if (config.no_file) {
+    importing.generateConfig(config, processedData);
+  }
+
   processedData.genes = new Set(
     processedData.mutations.map((mutation) => mutation.gene)
   );
@@ -488,9 +534,13 @@ const loadData = async () => {
   cached_starting_values = result;
   console.log("Saved cached starting vals");
   // set a timeout to start listening
+
   setTimeout(() => {
     console.log("Starting to listen");
     startListening();
+    logStatusMessage({
+      status: "loaded",
+    });
   }, 10);
 };
 loadData();

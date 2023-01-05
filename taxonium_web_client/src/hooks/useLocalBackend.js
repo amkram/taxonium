@@ -69,6 +69,14 @@ function useLocalBackend(uploaded_data, proto) {
       window.alert(receivedData.data.error);
       console.log("ERROR33:", receivedData.data.error);
     }
+    const total_nodes = receivedData.data.total;
+    if (total_nodes && total_nodes > 6000000) {
+      if (1) {
+        window.alert(
+          "This is a large tree which may use too much memory to run in the web browser. If the page crashes you might want to try the Taxonium desktop app."
+        );
+      }
+    }
     setStatusMessage(receivedData.data);
   };
   useEffect(() => {

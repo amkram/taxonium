@@ -3,6 +3,7 @@
 import orjson
 import json
 import pandas as pd
+import datetime
 from alive_progress import config_handler, alive_it, alive_bar
 
 from . import ushertools
@@ -92,7 +93,7 @@ def do_processing(input_file,
     utils.set_terminal_y_coords(mat.tree.root)
     utils.set_internal_y_coords(mat.tree.root)
 
-    nodes_sorted_by_y = utils.sort_on_y(mat)
+    nodes_sorted_by_y = utils.sort_on_y(mat.tree)
     all_aa_muts_objects = utils.get_all_aa_muts(mat.tree.root)
     if only_variable_sites:
         variable_muts = [
@@ -137,6 +138,8 @@ def do_processing(input_file,
     }
 
     config['num_tips'] = total_tips
+    yyyymmdd = datetime.datetime.now().strftime("%Y-%m-%d")
+    config['date_created'] = yyyymmdd
 
     first_json = {
         "version": version,
@@ -175,16 +178,18 @@ def do_processing(input_file,
 def get_parser():
     parser = argparse.ArgumentParser(
         description='Convert a Usher pb to Taxonium jsonl format')
-    parser.add_argument('-i',
-                        '--input',
-                        type=str,
-                        help='File path to input Usher protobuf file (.pb)',
-                        required=True)
-    parser.add_argument('-o',
-                        '--output',
-                        type=str,
-                        help='File path for output Taxonium jsonl file',
-                        required=True)
+    parser.add_argument(
+        '-i',
+        '--input',
+        type=str,
+        help='File path to input Usher protobuf file (.pb / .pb.gz)',
+        required=True)
+    parser.add_argument(
+        '-o',
+        '--output',
+        type=str,
+        help='File path for output Taxonium jsonl file (.jsonl / .jsonl.gz)',
+        required=True)
     parser.add_argument('-m',
                         '--metadata',
                         type=str,
@@ -201,7 +206,7 @@ def get_parser():
         "--columns",
         type=str,
         help=
-        "Column names to include in the metadata, separated by columns, e.g. `pangolin_lineage,country`"
+        "Column names to include in the metadata, separated by commas, e.g. `pangolin_lineage,country`"
     )
     parser.add_argument(
         '-C',
@@ -249,7 +254,7 @@ def get_parser():
         "--overlay_html",
         type=str,
         help=
-        "A file containing HTML to put in the About box when this tree is loaded. This could contain information about who you are who built the tree and what data you used.",
+        "A file containing HTML to put in the About box when this tree is loaded. This could contain information about who built the tree and what data you used.",
         default=None)
     parser.add_argument(
         '--remove_after_pipe',
@@ -261,7 +266,7 @@ def get_parser():
         "--clade_types",
         type=str,
         help=
-        "Optionally specify clade types provided in the UShER file, comma separated - e.g. 'nextstrain,pango'. Order must match that used in the UShER pb file.",
+        "Optionally specify clade types provided in the UShER file, comma separated - e.g. 'nextstrain,pango'. Order must match that used in the UShER pb file. If you haven't specifically annotated clades in your protobuf, don't use this",
         default=None)
     parser.add_argument('--name_internal_nodes',
                         action='store_true',
@@ -282,7 +287,7 @@ def get_parser():
         '--only_variable_sites',
         action='store_true',
         help=
-        "Only store information about the root sequence if there is variation somewhere in the tree. This may be removed in future versions."
+        "Only store information about the root sequence at a particular position if there is variation at that position somewhere in the tree. This helps to speed up the loading of larger genomes such as MPXV."
     )
 
     parser.add_argument(

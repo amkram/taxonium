@@ -1,12 +1,8 @@
 # Taxonium
 
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![Published in Nature](https://img.shields.io/badge/Published%20in-eLife-blue.svg)](https://elifesciences.org/articles/82392) <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->[![All Contributors](https://img.shields.io/badge/All_contributors-7-orange.svg?style=flat-square)](#contributors-)<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-[![All Contributors](https://img.shields.io/badge/all_contributors-7-orange.svg?style=flat-square)](#contributors-)
-
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-
-Taxonium is a tool for exploring trees.
+Taxonium is a tool for exploring trees, including those with millions of nodes.
 
 <!--<p align="center"><a href="https://taxonium.org"><img src="https://user-images.githubusercontent.com/19732295/169698808-48204d73-c468-4e80-aff5-876e5df7eab4.png" width=250 /></a></p>-->
 
@@ -14,7 +10,7 @@ Taxonium is a tool for exploring trees.
 
 ### [📚 Consult the documentation](https://taxonium.readthedocs.io/en/latest/)
 
-### [📝 Read the preprint](https://www.biorxiv.org/content/10.1101/2022.06.03.494608v1)
+### [📝 Read the paper](https://elifesciences.org/articles/82392)
 
 ## How do I..
 
@@ -34,6 +30,10 @@ You can also use taxoniumtools to add your own metadata to [the existing public 
 
 Find out more in [📚 the documentation](https://taxonium.readthedocs.io/en/latest/).
 
+### load really huge trees?
+
+For trees larger than about 6M tips, loading local trees in the browser at Taxonium.org can be unreliable on some systems due to browser memory limitations. To avoid these issues, use the [Taxonium desktop app](https://docs.taxonium.org/en/latest/app.html).
+
 ## See Taxonium in action
 
 - [Cov2Tree](https://cov2tree.org/) - (the repo that runs this is [here](https://github.com/theosanderson/cov2tree))
@@ -44,12 +44,13 @@ Find out more in [📚 the documentation](https://taxonium.readthedocs.io/en/lat
 ## Citing Taxonium
 
 ```
-Taxonium: a web-based tool for exploring large phylogenetic trees
-Theo Sanderson
-bioRxiv 2022.06.03.494608; doi: https://doi.org/10.1101/2022.06.03.494608
+Sanderson, T (2022). Taxonium, a web-based tool for exploring large phylogenetic trees. Elife, 11:e82392
+https://doi.org/10.7554/eLife.82392
 ```
 
 N.B. If you are citing the _tree_ displayed at Cov2Tree.org, please cite [the UCSC tree](https://pubmed.ncbi.nlm.nih.gov/34469548/) (.. and ideally Taxonium too if you relied on it for exploration)
+
+There is a separate [preprint for the Treenome browser](https://www.biorxiv.org/content/10.1101/2022.09.28.509985v1).
 
 ## Structure
 
@@ -76,19 +77,22 @@ We are very grateful to our contributors:
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://github.com/amkram"><img src="https://avatars.githubusercontent.com/u/6502785?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Alex Kramer</b></sub></a><br /><a href="https://github.com/theosanderson/taxonium/commits?author=amkram" title="Code">💻</a> <a href="#design-amkram" title="Design">🎨</a> <a href="#ideas-amkram" title="Ideas, Planning, & Feedback">🤔</a></td>
-    <td align="center"><a href="http://genome.ucsc.edu/"><img src="https://avatars.githubusercontent.com/u/186983?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Angie Hinrichs</b></sub></a><br /><a href="#ideas-AngieHinrichs" title="Ideas, Planning, & Feedback">🤔</a> <a href="#data-AngieHinrichs" title="Data">🔣</a></td>
-    <td align="center"><a href="https://github.com/richardgoater"><img src="https://avatars.githubusercontent.com/u/1429721?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Richard Goater</b></sub></a><br /><a href="#design-richardgoater" title="Design">🎨</a> <a href="https://github.com/theosanderson/taxonium/commits?author=richardgoater" title="Code">💻</a></td>
-    <td align="center"><a href="https://github.com/chaoran-chen"><img src="https://avatars.githubusercontent.com/u/18666552?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Chaoran Chen</b></sub></a><br /><a href="#ideas-chaoran-chen" title="Ideas, Planning, & Feedback">🤔</a></td>
-    <td align="center"><a href="https://github.com/corneliusroemer"><img src="https://avatars.githubusercontent.com/u/25161793?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Cornelius Roemer</b></sub></a><br /><a href="#ideas-corneliusroemer" title="Ideas, Planning, & Feedback">🤔</a></td>
-    <td align="center"><a href="https://github.com/sungyeonkwon"><img src="https://avatars.githubusercontent.com/u/25865179?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Sung Kwon</b></sub></a><br /><a href="#infra-sungyeonkwon" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center"><a href="https://github.com/amkram"><img src="https://avatars.githubusercontent.com/u/6502785?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Alex Kramer</b></sub></a><br /><a href="https://github.com/theosanderson/taxonium/commits?author=amkram" title="Code">💻</a> <a href="#design-amkram" title="Design">🎨</a> <a href="#ideas-amkram" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center"><a href="http://genome.ucsc.edu/"><img src="https://avatars.githubusercontent.com/u/186983?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Angie Hinrichs</b></sub></a><br /><a href="#ideas-AngieHinrichs" title="Ideas, Planning, & Feedback">🤔</a> <a href="#data-AngieHinrichs" title="Data">🔣</a></td>
+      <td align="center"><a href="https://github.com/richardgoater"><img src="https://avatars.githubusercontent.com/u/1429721?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Richard Goater</b></sub></a><br /><a href="#design-richardgoater" title="Design">🎨</a> <a href="https://github.com/theosanderson/taxonium/commits?author=richardgoater" title="Code">💻</a></td>
+      <td align="center"><a href="https://github.com/chaoran-chen"><img src="https://avatars.githubusercontent.com/u/18666552?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Chaoran Chen</b></sub></a><br /><a href="#ideas-chaoran-chen" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center"><a href="https://github.com/corneliusroemer"><img src="https://avatars.githubusercontent.com/u/25161793?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Cornelius Roemer</b></sub></a><br /><a href="#ideas-corneliusroemer" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center"><a href="https://github.com/sungyeonkwon"><img src="https://avatars.githubusercontent.com/u/25865179?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Sung Kwon</b></sub></a><br /><a href="#infra-sungyeonkwon" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+      <td align="center"><a href="https://kvargha.com/"><img src="https://avatars.githubusercontent.com/u/35252220?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Koorous Vargha</b></sub></a><br /><a href="https://github.com/theosanderson/taxonium/commits?author=kvargha" title="Code">💻</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
 
-[Alex Kramer](https://corbett-lab.github.io/People/Current/alex/) at UCSC built the _Treenome Browser_ component within Taxonium which will be described in a forthcoming publication.
-
 <!-- ALL-CONTRIBUTORS-LIST:END -->
+
+[Alex Kramer](https://corbett-lab.github.io/People/Current/alex/) at UCSC built the _Treenome Browser_ component within Taxonium, described [here](https://www.biorxiv.org/content/10.1101/2022.09.28.509985v1).

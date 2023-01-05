@@ -8,6 +8,7 @@ index.md
 taxoniumtools.md
 advanced.md
 treenome.md
+app.md
 ```
 
 Taxonium is a tool for exploring phylogenetic trees. The web interface can be accessed at [taxonium.org](https://taxonium.org/) and the source code repository at [https://github.com/theosanderson/taxonium](https://github.com/theosanderson/taxonium).
@@ -74,7 +75,7 @@ You can **pan** by clicking and dragging the tree, or using the arrow keys on yo
 
 You can **zoom vertically** by scrolling with your mouse, or with the buttons at the bottom right of the window, or with the + and - keys on your keyboard.
 
-You can **zoom horizontally** by scrolling with your mouse whilst holding down Ctrl, or by toggling the scroll type with the icon in the bottom right and then scrolling normally or using the buttons in the bottom right.
+You can **zoom horizontally** by scrolling with your mouse whilst holding down Ctrl, or using the buttons in the bottom right.
 
 ### Using the minimap
 

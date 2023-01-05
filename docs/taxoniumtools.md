@@ -8,9 +8,9 @@ Taxoniumtools is available from PyPI. You can install it with pip.
 pip install taxoniumtools
 ```
 
-The `usher_to_taxonium` utility will then be available for use.
+The `usher_to_taxonium`, and `newick_to_taxonium` utilities will then be available for use.
 
-#### Using usher_to_taxonium from taxoniumtools
+#### Using usher_to_taxonium
 
 ##### Example
 
@@ -47,7 +47,7 @@ Some people ask what the "L" in JSONL is for. JSONL means "JSON Lines". Each lin
    :func: get_parser
    :prog: usher_to_taxonium
 
-   This tool with convert an UShER protobuf file into a Taxonium file. At its simplest it just takes the `-i` and `-o` parameters, describing the input and output files. But for the most complete results you can add metadata, a reference genome, or even create a time tree.
+   This tool will convert an UShER protobuf file into a Taxonium file. At its simplest it just takes the `-i` and `-o` parameters, describing the input and output files. But for the most complete results you can add metadata, a reference genome, or even create a time tree.
 
    j
       This file controls many aspects of the UI for Taxonium, such as what searches are available. You can see an example file at https://github.com/theosanderson/taxonium/blob/master/taxonium_backend/config_public.json.
@@ -57,3 +57,14 @@ Some people ask what the "L" in JSONL is for. JSONL means "JSON Lines". Each lin
 ```
 
 Using the parameters above you can trigger `usher_to_taxonium` to launch [Chronumental](https://github.com/theosanderson/chronumental) and create a time tree which will be packaged into your tree.
+
+##### newick_to_taxonium
+
+If you don't need genotype data encoded in the final tree (e.g. some taxonomies, or non-genome-based trees) you can skip UShER and use `newick_to_taxonium`
+
+```{eval-rst}
+.. argparse::
+   :module: taxoniumtools.src.taxoniumtools.newick_to_taxonium
+   :func: get_parser
+   :prog: newick_to_taxonium
+```

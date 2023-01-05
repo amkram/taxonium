@@ -15,11 +15,26 @@ function guessType(file_object) {
   const file_name = file_object.name.toLowerCase().replace(".gz", "");
   const file_extension = file_name.split(".").pop();
 
-  const tree_extensions = ["nwk", "newick", "tree", "tre", "nh"];
+  const tree_extensions = [
+    "nwk",
+    "newick",
+    "tree",
+    "tre",
+    "nh",
+    "phy",
+    "nw",
+    "treefile",
+    "rooted",
+  ];
 
   if (tree_extensions.includes(file_extension)) {
     return "nwk";
   }
+
+  if (file_extension === "nexus" || file_extension === "nex") {
+    return "nexus";
+  }
+
   if (file_extension === "jsonl") {
     return "jsonl";
   }
@@ -112,7 +127,11 @@ export const useInputHelper = ({
       return ["invalid", "You can only use a single metadata file"];
     }
     // can't have more than one tree file
-    if (inputs.filter((input) => input.filetype === "nwk").length > 1) {
+    if (
+      inputs.filter(
+        (input) => input.filetype === "nwk" || input.filetype === "nexus"
+      ).length > 1
+    ) {
       return ["invalid", "You can only use a single tree file"];
     }
     if (inputs.some((input) => input.filetype === "unknown")) {
@@ -121,7 +140,9 @@ export const useInputHelper = ({
     // must have a tree file or a jsonl
     if (
       inputs.filter((input) => input.filetype === "jsonl").length === 0 &&
-      inputs.filter((input) => input.filetype === "nwk").length === 0 &&
+      inputs.filter(
+        (input) => input.filetype === "nwk" || input.filetype === "nexus"
+      ).length === 0 &&
       inputs.filter((input) => input.filetype === "nextstrain").length === 0
     ) {
       return [
@@ -152,7 +173,10 @@ export const useInputHelper = ({
           input.filetype.startsWith("meta_")
         );
         const tree_file = inputs.find(
-          (input) => input.filetype === "nwk" || input.filetype === "nextstrain"
+          (input) =>
+            input.filetype === "nwk" ||
+            input.filetype === "nextstrain" ||
+            input.filetype === "nexus"
         );
         const newQuery = {
           treeUrl: tree_file.name,
@@ -161,6 +185,7 @@ export const useInputHelper = ({
         };
         if (meta_file) {
           newQuery.metaUrl = meta_file.name;
+          newQuery.metaType = meta_file.filetype;
         }
         updateQuery(newQuery);
       }
@@ -185,12 +210,16 @@ export const useInputHelper = ({
           filename: meta_file.name,
           data: meta_file.data,
           status: meta_file.supplyType === "url" ? "url_supplied" : "loaded",
+          filetype: meta_file.filetype,
         };
       }
 
       // if there is a tree file find it
       const tree_file = inputs.find(
-        (input) => input.filetype === "nwk" || input.filetype === "nextstrain"
+        (input) =>
+          input.filetype === "nwk" ||
+          input.filetype === "nextstrain" ||
+          input.filetype === "nexus"
       );
 
       upload_obj.filename = tree_file.name;
@@ -224,6 +253,11 @@ export const useInputHelper = ({
       if (query.metaUrl) {
         extra.metadata = {
           filename: query.metaUrl,
+          filetype: query.metaType
+            ? query.metaType
+            : query.metaUrl.includes("csv")
+            ? "meta_csv"
+            : "meta_tsv",
           status: "url_supplied",
           taxonColumn: query.taxonColumn,
         };

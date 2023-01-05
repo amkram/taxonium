@@ -8,6 +8,24 @@ import {
 import { useMemo, useCallback } from "react";
 import useTreenomeLayers from "./useTreenomeLayers";
 
+const getKeyStuff = (getNodeColorField, colorByField, dataset, toRGB) => {
+  const counts = {};
+  for (const node of dataset.nodes) {
+    const value = getNodeColorField(node, dataset);
+    if (value in counts) {
+      counts[value]++;
+    } else {
+      counts[value] = 1;
+    }
+  }
+  const keys = Object.keys(counts);
+  const output = [];
+  for (const key of keys) {
+    output.push({ value: key, count: counts[key], color: toRGB(key) });
+  }
+  return output;
+};
+
 const useLayers = ({
   data,
   search,
@@ -29,6 +47,7 @@ const useLayers = ({
 }) => {
   const lineColor = [150, 150, 150];
   const getNodeColorField = colorBy.getNodeColorField;
+  const colorByField = colorBy.colorByField;
 
   const { toRGB } = colorHook;
 
@@ -63,6 +82,10 @@ const useLayers = ({
       return { nodes: [], nodeLookup: {} };
     }
   }, [data.data, getX]);
+
+  const keyStuff = useMemo(() => {
+    return getKeyStuff(getNodeColorField, colorByField, detailed_data, toRGB);
+  }, [detailed_data, getNodeColorField, colorByField, toRGB]);
 
   const clade_accessor = "pango";
 
@@ -314,8 +337,9 @@ const useLayers = ({
 
   // If leaves are fewer than max_text_number, add a text layer
   if (
+    data.data.nodes &&
     proportionalToNodesOnScreen <
-    0.8 * 10 ** settings.thresholdForDisplayingText
+      0.8 * 10 ** settings.thresholdForDisplayingText
   ) {
     const node_label_layer = new TextLayer({
       id: "main-text-node",
@@ -499,7 +523,7 @@ const useLayers = ({
     [isCurrentlyOutsideBounds]
   );
 
-  return { layers, layerFilter };
+  return { layers, layerFilter, keyStuff };
 };
 
 export default useLayers;

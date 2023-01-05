@@ -5,13 +5,14 @@ import { Button } from "../components/Basic";
 import { BsBoxArrowInUpRight, BsQuestionCircle } from "react-icons/bs";
 import { MdArrowForward, MdArrowDownward } from "react-icons/md";
 import ReactTooltip from "react-tooltip";
+import prettifyName from "../utils/prettifyName";
 
 import { FaSearch, FaShare } from "react-icons/fa";
 
 import { Select } from "./Basic";
 import ListOutputModal from "./ListOutputModal";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import classNames from "classnames";
 
@@ -54,6 +55,10 @@ function SearchPanel({
   perNodeFunctions,
   toggleSidebar,
 }) {
+  useEffect(() => {
+    ReactTooltip.rebuild();
+  });
+
   const covSpectrumQuery = useMemo(() => {
     if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.node_id) {
       return perNodeFunctions.getCovSpectrumQuery(
@@ -73,20 +78,10 @@ function SearchPanel({
     }
   };
 
-  const prettifyName = (name) => {
-    if (config && config.customNames && config.customNames[name]) {
-      return config.customNames[name];
-    }
-    if (name === "num_tips") {
-      return "Number of descendants";
-    }
-    const new_name = name.replace("meta_", "").replace("_", " ");
-    return new_name.charAt(0).toUpperCase() + new_name.slice(1);
-  };
-
   const formatMetadataItem = (key) => {
     // if matches a markdown link "[abc](https://abc.com)" then..
     if (key === "num_tips" && selectedDetails.nodeDetails[key] === 1) return;
+
     if (
       selectedDetails.nodeDetails &&
       selectedDetails.nodeDetails[key] &&
@@ -112,7 +107,7 @@ function SearchPanel({
     if (config.metadataTypes && config.metadataTypes[key] === "sequence") {
       return (
         <div className="text-sm mt-1" key={key}>
-          <span className="font-semibold">{prettifyName(key)}:</span>{" "}
+          <span className="font-semibold">{prettifyName(key, config)}:</span>{" "}
           <div className="text-xs font-mono break-all">
             {selectedDetails.nodeDetails[key]}
           </div>
@@ -122,7 +117,7 @@ function SearchPanel({
 
     return (
       <div className="text-sm mt-1" key={key}>
-        <span className="font-semibold">{prettifyName(key)}:</span>{" "}
+        <span className="font-semibold">{prettifyName(key, config)}:</span>{" "}
         {colorBy.colorByField === key ? (
           <span
             style={{
@@ -182,6 +177,7 @@ function SearchPanel({
                         </div>
 
                         {backend.type === "server" &&
+                          !backend.backend_url.includes("localhost") &&
                           selectedDetails.nodeDetails[key] < 20000 && (
                             <>
                               <div className="mb-3">
@@ -251,7 +247,9 @@ function SearchPanel({
           <p className="text-gray-500 text-sm">
             {overlayContent ? (
               <>
-                Displaying{" "}
+                <span title={config.date_created ? config.date_created : ""}>
+                  Displaying
+                </span>{" "}
                 <button
                   className="underline"
                   onClick={() => {
@@ -301,14 +299,7 @@ function SearchPanel({
                 className="m-3 inline-block"
                 checked={settings.treenomeEnabled}
                 onChange={(event) => {
-                  console.log(settings.treenomeEnabled);
                   settings.setTreenomeEnabled(!settings.treenomeEnabled);
-
-                  // view.setViewState({
-                  //   ...view.viewState,
-                  //  "browser-main": { zoom: -2, target: [500, 1000] },
-                  // "browser-axis": { zoom: -2, target: [0, 1000] },
-                  // });
                 }}
               />
               <button
@@ -322,14 +313,6 @@ function SearchPanel({
                   <BsQuestionCircle />
                 </span>
               </button>
-              <ReactTooltip
-                delayHide={400}
-                className="infoTooltip"
-                place="top"
-                backgroundColor="#e5e7eb"
-                textColor="#000"
-                effect="solid"
-              />
             </span>
           )}
       </div>
@@ -349,7 +332,7 @@ function SearchPanel({
           >
             {colorBy.colorByOptions.map((item) => (
               <option key={item} value={item}>
-                {prettifyName(item)}
+                {prettifyName(item, config)}
               </option>
             ))}
           </Select>
@@ -447,6 +430,7 @@ function SearchPanel({
                 </button>
               )}
             </h2>
+
             <button
               onClick={() => selectedDetails.clearNodeDetails()}
               className="text-gray-500"
@@ -454,6 +438,13 @@ function SearchPanel({
               close
             </button>
           </header>
+          {selectedDetails.nodeDetails["meta_ThumbnailURL"] && (
+            <img
+              src={selectedDetails.nodeDetails["meta_ThumbnailURL"]}
+              alt="thumbnail"
+            />
+          )}
+
           {colorBy.colorByField === "genotype" && (
             <span
               style={{

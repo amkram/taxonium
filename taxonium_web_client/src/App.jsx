@@ -14,7 +14,14 @@ import { getDefaultSearch } from "./utils/searchUtil";
 import InputSupplier from "./components/InputSupplier";
 import FirefoxWarning from "./components/FirefoxWarning";
 import { Toaster } from "react-hot-toast";
-const first_search = getDefaultSearch("aa1");
+import ReactTooltip from "react-tooltip";
+import { HiOutlineBookOpen } from "react-icons/hi";
+
+const first_search = getDefaultSearch(null, "aa1");
+
+if (window.location.hostname.includes("visualtreeoflife.taxonium.org")) {
+  first_search["type"] = "meta_name";
+}
 
 const Taxonium = React.lazy(() => import("./Taxonium"));
 
@@ -49,6 +56,11 @@ if (window.location.hostname.includes("taxonomy.taxonium.org")) {
     "https://cov2tree.nyc3.digitaloceanspaces.com/ncbi/config.json";
 
   default_query.ladderizeTree = "true";
+}
+
+if (window.location.hostname.includes("visualtreeoflife.taxonium.org")) {
+  default_query.protoUrl =
+    "https://cov2tree.nyc3.digitaloceanspaces.com/wikidata/out.jsonl.gz";
 }
 
 function App() {
@@ -152,8 +164,40 @@ function App() {
   const [overlayContent, setOverlayContent] = useState(null);
   // does the window location contain epicov anywhere
   const isGisaid = window.location.toString().includes("epicov.org");
+
+  const showCase = [
+    {
+      title: "SARS-CoV-2",
+      url: "/?backend=https://api.cov2tree.org",
+      desc: "Public sequences of SARS-CoV-2 from the INSDC databases",
+    },
+    {
+      title: "Wikidata visual tree of life",
+      url: "/?configUrl=https%3A%2F%2Fcov2tree.nyc3.digitaloceanspaces.com%2Fncbi%2Fconfig_special2.json&protoUrl=https%3A%2F%2Fcov2tree.nyc3.cdn.digitaloceanspaces.com%2Fncbi%2Fspecial_filtered.jsonl.gz&xType=x_dist",
+      desc: "The tree of life, showing species from Wikidata with images. Links to Wikipedia.",
+    },
+    {
+      title: "NCBI Taxonomy (full)",
+      url: "https://taxonomy.taxonium.org",
+      desc: "Full 2.2M NCBI Taxonomy of species",
+    },
+    {
+      title: "Monkeypox",
+      url: "https://mpx.taxonium.org",
+      desc: "Monkeypox sequences from GenBank",
+    },
+  ];
+
   return (
     <Router>
+      <ReactTooltip
+        delayHide={400}
+        className="infoTooltip"
+        place="top"
+        backgroundColor="#e5e7eb"
+        textColor="#000"
+        effect="solid"
+      />
       <AboutOverlay
         enabled={aboutEnabled}
         setEnabled={setAboutEnabled}
@@ -215,10 +259,14 @@ function App() {
                 )}
               </>
             ) : (
-              <>
-                <CgListTree className="h-6 w-6" />
+              <a
+                href="//taxonium.org"
+                className="hover:underline"
+                target="_top"
+              >
+                <CgListTree className="h-6 w-6 inline-block mr-2 -mt-1" />
                 <span className="font-bold">Taxonium</span>
-              </>
+              </a>
             )}
           </h1>
           <div className="flex ">
@@ -233,6 +281,7 @@ function App() {
               href="https://github.com/theosanderson/taxonium"
               className="text-white font-bold hover:underline flex items-center"
               title="Source code"
+              target="_top"
             >
               <FaGithub className="w-6 h-6 opacity-80 mr-2 " />
             </a>
@@ -258,31 +307,42 @@ function App() {
                 Welcome to Taxonium, a tool for exploring large trees
               </p>
               <InputSupplier inputHelper={inputHelper} />
-              <p className="text-md text-gray-700 font-semibold mb-2">
-                or{" "}
+              <div className="flex flex-col space-y-3 pt-6">
+                {/* Horizontal separator and text "or load an existing tree:"*/}
+                <div className="flex flex-row items-center">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <div className="px-2 text-gray-500 text-sm">
+                    or load an existing tree:
+                  </div>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+                {/* Showcases */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {showCase.map((item, i) => (
+                    <div key={i} className="border border-gray-300 rounded p-3">
+                      <a
+                        href={item.url}
+                        className="text-gray-800 hover:underline"
+                        target="_top"
+                      >
+                        {item.title}
+                      </a>
+                      <p className="text-gray-600 text-sm">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* documentation link, centered with react-icons*/}
+              <div className="flex justify-center pt-5">
                 <a
-                  className="text-blue-500"
-                  href="/?backend=https://api.cov2tree.org"
+                  href="//docs.taxonium.org"
+                  className="text-gray-500 hover:underline"
+                  target="_top"
                 >
-                  load the public SARS-CoV-2 tree
+                  <HiOutlineBookOpen className="w-6 h-4 opacity-80 mr-2 inline-block " />
+                  Read the Taxonium documentation
                 </a>
-                ,{" "}
-                <a
-                  className="text-blue-500"
-                  href="/?treeUrl=https%3A%2F%2Fcov2tree.nyc3.digitaloceanspaces.com%2Fncbi%2Ftree.nwk.gz&ladderizeTree=true&metaUrl=https%3A%2F%2Fcov2tree.nyc3.digitaloceanspaces.com%2Fncbi%2Fmetadata.tsv.gz&configUrl=https%3A%2F%2Fcov2tree.nyc3.digitaloceanspaces.com%2Fncbi%2Fconfig.json"
-                >
-                  an exploration of the NCBI taxonomy
-                </a>
-                , or{" "}
-                <a
-                  className="text-blue-500"
-                  href="https://taxonium.readthedocs.io/en/latest/"
-                >
-                  read more
-                </a>{" "}
-                about how to use Taxonium
-              </p>{" "}
-              <FirefoxWarning className="mt-8 text-gray-400" />
+              </div>
             </div>
           )}
         </Suspense>
@@ -290,4 +350,5 @@ function App() {
     </Router>
   );
 }
+
 export default App;
