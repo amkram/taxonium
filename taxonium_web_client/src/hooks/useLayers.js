@@ -8,20 +8,25 @@ import {
 import { useMemo, useCallback } from "react";
 import useTreenomeLayers from "./useTreenomeLayers";
 
-const getKeyStuff = (getNodeColorField, colorByField, dataset, toRGB) => {
+const getKeyStuff = (getNodeColorField, colorByField, dataset, toRGB, selectedDetails) => {
   const counts = {};
-  for (const node of dataset.nodes) {
-    const value = getNodeColorField(node, dataset);
-    if (value in counts) {
-      counts[value]++;
-    } else {
-      counts[value] = 1;
-    }
-  }
-  const keys = Object.keys(counts);
   const output = [];
-  for (const key of keys) {
-    output.push({ value: key, count: counts[key], color: toRGB(key) });
+
+  if (colorByField === "meta_uncertainty") {
+    output.push({ value: "Equally parsimonious", count: 1, color: [0, 255, 0]})
+  } else {
+    for (const node of dataset.nodes) {
+      const value = getNodeColorField(node, dataset);
+      if (value in counts) {
+        counts[value]++;
+      } else {
+        counts[value] = 1;
+      }
+    }
+    const keys = Object.keys(counts);
+    for (const key of keys) {
+      output.push({ value: key, count: counts[key], color: toRGB(key) });
+    }
   }
   return output;
 };
@@ -44,6 +49,7 @@ const useLayers = ({
   treenomeState,
   treenomeReferenceInfo,
   setTreenomeReferenceInfo,
+  extra_circled_nodes
 }) => {
   const lineColor = [150, 150, 150];
   const getNodeColorField = colorBy.getNodeColorField;
@@ -83,8 +89,8 @@ const useLayers = ({
   }, [data.data, getX]);
 
   const keyStuff = useMemo(() => {
-    return getKeyStuff(getNodeColorField, colorByField, detailed_data, toRGB);
-  }, [detailed_data, getNodeColorField, colorByField, toRGB]);
+    return getKeyStuff(getNodeColorField, colorByField, detailed_data, toRGB, selectedDetails);
+  }, [detailed_data, getNodeColorField, colorByField, toRGB, selectedDetails]);
 
   const clade_accessor = "pango";
 
@@ -155,8 +161,17 @@ const useLayers = ({
 
   const scatter_layer_common_props = {
     getPosition: (d) => [getX(d), d.y],
-    getFillColor: (d) => toRGB(getNodeColorField(d, detailed_data)),
-
+    getFillColor: (d) => {
+      if (colorByField === "meta_uncertainty") {
+        if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty && selectedDetails.nodeDetails.meta_uncertainty.includes(d.name)) {
+          return [0, 255, 0];
+        } else {
+          return [180, 180, 180];
+        }
+      } else {
+        return toRGB(getNodeColorField(d, detailed_data));
+      }
+    },
     // radius in pixels
     getRadius: 3,
     getLineColor: [100, 100, 100],
@@ -169,7 +184,7 @@ const useLayers = ({
     onHover: (info) => setHoverInfo(info),
     modelMatrix: modelMatrix,
     updateTriggers: {
-      getFillColor: [detailed_data, getNodeColorField],
+      getFillColor: [detailed_data, getNodeColorField, selectedDetails, colorByField, toRGB],
       getPosition: [xType],
     },
   };
@@ -230,7 +245,17 @@ const useLayers = ({
       ...scatter_layer_common_props,
       id: "fillin-scatter",
       data: minimap_scatter_data,
-      getFillColor: (d) => toRGB(getNodeColorField(d, base_data)),
+      getFillColor: (d) => {
+        if (colorByField === "meta_uncertainty") {
+          if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty && selectedDetails.nodeDetails.meta_uncertainty.includes(d.name)) {
+            return [0, 255, 0];
+          } else {
+            return [180, 180, 180];
+          }
+        } else {
+          return toRGB(getNodeColorField(d, base_data));
+        }
+      }
     });
 
     const main_line_layer = new LineLayer({
@@ -371,8 +396,17 @@ const useLayers = ({
     data: minimap_scatter_data,
     getPolygonOffset: ({ layerIndex }) => [0, -4000],
     getPosition: (d) => [getX(d), d.y],
-    getFillColor: (d) => toRGB(getNodeColorField(d, base_data)),
-    // radius in pixels
+    getFillColor: (d) => {
+      if (colorByField === "meta_uncertainty") {
+        if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty && selectedDetails.nodeDetails.meta_uncertainty.includes(d.name)) {
+          return [0, 255, 0];
+        } else {
+          return [180, 180, 180];
+        }
+      } else {
+        return toRGB(getNodeColorField(d, base_data));
+      }
+    },    
     getRadius: 2,
     getLineColor: [100, 100, 100],
 
@@ -380,7 +414,7 @@ const useLayers = ({
     radiusUnits: "pixels",
     onHover: (info) => setHoverInfo(info),
     updateTriggers: {
-      getFillColor: [base_data, getNodeColorField],
+      getFillColor: [base_data, getNodeColorField, colorByField, selectedDetails],
       getPosition: [minimap_scatter_data, xType],
     },
   });
@@ -497,6 +531,52 @@ const useLayers = ({
       updateTriggers: { getPosition: [xType] },
     });
   });
+
+  // circle specified nodes separately from search (e.g. for uncertainty metadata)
+  const numSearches = searchSpec.length;
+  const extra_circled_nodes_layer = new ScatterplotLayer({
+      data: extra_circled_nodes,
+      id: "main-extra-scatter",
+      getPosition: (d) => [d[xType], d.y],
+      getLineColor: search.getLineColor(numSearches),
+      getRadius: 5 + 2 * numSearches,
+      radiusUnits: "pixels",
+      lineWidthUnits: "pixels",
+      stroked: true,
+      wireframe: true,
+      getLineWidth: 1,
+      filled: true,
+      getFillColor: [255, 0, 0, 0],
+      modelMatrix: modelMatrix,
+      updateTriggers: {
+        getPosition: [xType],
+        getLineColor: numSearches
+      }
+  });
+
+  const extra_circled_nodes_mini_layer = new ScatterplotLayer({
+      data: extra_circled_nodes,
+      getPolygonOffset: ({ layerIndex }) => [0, -9000],
+      id: "mini-extra-circle-scatter",
+      getPosition: (d) => [d[xType], d.y],
+      getLineColor: search.getLineColor(numSearches),
+      getRadius: 5 + 2 * numSearches,
+      radiusUnits: "pixels",
+      lineWidthUnits: "pixels",
+      stroked: true,
+
+      wireframe: true,
+      getLineWidth: 1,
+      filled: false,
+      getFillColor: [255, 0, 0, 0],
+      updateTriggers: { 
+        getPosition: [xType],
+        getLineColor: numSearches
+      },
+  });
+  
+
+
   layers.push(...search_layers, search_mini_layers);
 
   layers.push(minimap_polygon_background);
