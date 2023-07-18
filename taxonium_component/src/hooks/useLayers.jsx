@@ -13,7 +13,8 @@ const getKeyStuff = (getNodeColorField, colorByField, dataset, toRGB, selectedDe
   const output = [];
 
   if (colorByField === "meta_uncertainty") {
-    output.push({ value: "Equally parsimonious", count: 1, color: [0, 255, 0]})
+    output.push({ value: "Possible placements (selected node)", count: 1, color: [0, 255, 0] });
+    output.push({ value: "Ambiguous node", count: dataset.nodes.filter((x) => x.meta_uncertainty.length).length, color: [95, 158, 245]});
   } else {
     for (const node of dataset.nodes) {
       const value = getNodeColorField(node, dataset);
@@ -49,7 +50,6 @@ const useLayers = ({
   treenomeState,
   treenomeReferenceInfo,
   setTreenomeReferenceInfo,
-  extra_circled_nodes
 }) => {
   const lineColor = [150, 150, 150];
   const getNodeColorField = colorBy.getNodeColorField;
@@ -76,6 +76,8 @@ const useLayers = ({
 
   const getX = useCallback((node) => node[xType], [xType]);
 
+
+
   const detailed_data = useMemo(() => {
     if (data.data && data.data.nodes) {
       data.data.nodes.forEach((node) => {
@@ -91,6 +93,102 @@ const useLayers = ({
   const keyStuff = useMemo(() => {
     return getKeyStuff(getNodeColorField, colorByField, detailed_data, toRGB, selectedDetails);
   }, [detailed_data, getNodeColorField, colorByField, toRGB, selectedDetails]);
+
+  const findLCA = useCallback((nodes) => {
+    if (nodes.length === 0) {
+      return null;
+    }
+    const findPathToRoot = (node) => {
+      const pathToRoot = [];
+      let current = node;
+  
+      while (current.parent_id != current.node_id) {
+        pathToRoot.push(current);
+        current = data.data.nodeLookup[current.parent_id];
+      }
+      pathToRoot.push(current)
+  
+      return pathToRoot;
+    };
+  
+    const paths = {};
+    for (const node of nodes) {
+      paths[node.node_id] = findPathToRoot(node);
+    }
+  
+    let lca = null;
+    for (const node of nodes) {
+      const pathToRoot = paths[node.node_id];
+  
+      for (const pathNode of pathToRoot) {
+        if (Object.values(paths).every((k) => k.includes(pathNode))) {
+          lca = pathNode;
+          break;
+        }
+      }
+      if (lca) {
+        break;
+      }
+    }
+  
+    return lca;
+  }, [data.data]);
+  
+  const getNodePathsToLCA = useCallback((nodeNames) => {
+    if (!data.data.nodeLookup) {
+      return {};
+    }
+    const nodes = data.data.nodes.filter((x) => nodeNames.includes(x.name));
+    const lca = findLCA(nodes);
+  
+    if (!lca) {
+      return {};
+    }
+  
+    const pathsToLCA = {};
+  
+    for (const node of nodes) {
+      let pathToLCA = [];
+      let current = node;
+
+      while (current !== lca) {
+        pathToLCA.push(current.node_id);
+        current = data.data.nodeLookup[current.parent_id];;
+      }
+      pathToLCA.push(current.node_id);
+      pathsToLCA[node.node_id] = pathToLCA
+    }
+    return [pathsToLCA, lca];
+  }, [data.data, findLCA]);
+
+  const uncertaintyDict = useMemo(() => {
+    
+    if (!(selectedDetails && selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty)) {
+      return {};
+    }
+    
+    const d = {};
+    const nodeNames = selectedDetails.nodeDetails.meta_uncertainty.length ? [selectedDetails.nodeDetails.name, ...selectedDetails.nodeDetails.meta_uncertainty.split(',').map((x) => x.split(':')[0])] : [];
+    const probs = selectedDetails.nodeDetails.meta_uncertainty.split(',').map((x) => parseFloat(x.split(':')[1]));
+    probs.unshift(1 - probs.reduce((a,b) => a + b));
+    const [paths, lca] = getNodePathsToLCA(nodeNames);
+    let i = 0;
+    for (const path of Object.values(paths)) {
+      for (const node_id of path) {
+        const node = data.data.nodeLookup[node_id];
+        if(nodeNames.includes(node.name)) {
+          d[node_id] = parseFloat(probs[i]);
+        } else {
+          d[node_id] = null;
+        }
+      }
+      i++;
+    }
+    d['lca'] = lca;
+    return d;
+    
+  }, [selectedDetails.nodeDetails, data.data, getNodePathsToLCA]);
+
 
   const clade_accessor = "pango";
 
@@ -135,11 +233,11 @@ const useLayers = ({
   const minimap_scatter_data = useMemo(() => {
     return base_data
       ? base_data.nodes.filter(
-          (node) =>
-            node.is_tip ||
-            (node.is_tip === undefined && node.num_tips === 1) ||
-            settings.displayPointsForInternalNodes
-        )
+        (node) =>
+          node.is_tip ||
+          (node.is_tip === undefined && node.num_tips === 1) ||
+          settings.displayPointsForInternalNodes
+      )
       : [];
   }, [base_data, settings.displayPointsForInternalNodes]);
 
@@ -161,17 +259,7 @@ const useLayers = ({
 
   const scatter_layer_common_props = {
     getPosition: (d) => [getX(d), d.y],
-    getFillColor: (d) => {
-      if (colorByField === "meta_uncertainty") {
-        if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty && selectedDetails.nodeDetails.meta_uncertainty.includes(d.name)) {
-          return [0, 255, 0];
-        } else {
-          return [180, 180, 180];
-        }
-      } else {
-        return toRGB(getNodeColorField(d, detailed_data));
-      }
-    },
+    getFillColor: (d) => colorByField === "meta_uncertainty" && d.meta_uncertainty.length ? [95, 158, 245] : toRGB(getNodeColorField(d, detailed_data)),
     // radius in pixels
     getRadius: 3,
     getLineColor: [100, 100, 100],
@@ -184,10 +272,11 @@ const useLayers = ({
     onHover: (info) => setHoverInfo(info),
     modelMatrix: modelMatrix,
     updateTriggers: {
-      getFillColor: [detailed_data, getNodeColorField, selectedDetails, colorByField, toRGB],
+      getFillColor: [detailed_data, getNodeColorField, selectedDetails, toRGB],
       getPosition: [xType],
     },
   };
+
 
   const line_layer_horiz_common_props = {
     getSourcePosition: (d) => [getX(d), d.y],
@@ -195,16 +284,10 @@ const useLayers = ({
     getColor: lineColor,
     pickable: true,
     widthUnits: "pixels",
-    getWidth: (d) =>
-      d === (hoverInfo && hoverInfo.object)
-        ? 3
-        : selectedDetails.nodeDetails &&
-          selectedDetails.nodeDetails.node_id === d.node_id
-        ? 3.5
-        : 1,
-
+    getWidth: (d) => (d === (hoverInfo && hoverInfo.object))
+        ? 3 : selectedDetails.nodeDetails && selectedDetails.nodeDetails.node_id === d.node_id
+          ? 3.5 : 1,
     onHover: (info) => setHoverInfo(info),
-
     modelMatrix: modelMatrix,
     updateTriggers: {
       getSourcePosition: [detailed_data, xType],
@@ -217,15 +300,14 @@ const useLayers = ({
     getSourcePosition: (d) => [d.parent_x, d.y],
     getTargetPosition: (d) => [d.parent_x, d.parent_y],
     onHover: (info) => setHoverInfo(info),
-    getColor: lineColor,
+    getColor: (d) => lineColor,
     pickable: true,
-    getWidth: (d) =>
-      d === (hoverInfo && hoverInfo.object)
-        ? 2
-        : selectedDetails.nodeDetails &&
-          selectedDetails.nodeDetails.node_id === d.node_id
-        ? 2.5
-        : 1,
+    widthUnits: "pixels",
+    getWidth: (d) => {
+      return (d === (hoverInfo && hoverInfo.object))
+        ? 2 : selectedDetails.nodeDetails && selectedDetails.nodeDetails.node_id === d.node_id
+          ? 2.5 : 1;
+    },
     modelMatrix: modelMatrix,
     updateTriggers: {
       getSourcePosition: [detailed_data, xType],
@@ -233,6 +315,57 @@ const useLayers = ({
       getWidth: [hoverInfo, selectedDetails.nodeDetails],
     },
   };
+
+  const uncertainty_line_layer_vert_common_props = {
+    getSourcePosition: (d) => [d.parent_x, d.y],
+    getTargetPosition: (d) => [d.parent_x, d.parent_y],
+    onHover: (info) => setHoverInfo(info),
+    getColor: (d) => (colorByField === "meta_uncertainty" && selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty
+    && (d.node_id in uncertaintyDict && !(d === uncertaintyDict.lca)))
+    ? [0, 255, 0, 255] : [0, 0, 0, 0],
+    pickable: true,
+    widthUnits: "pixels",
+    getWidth: (d) => {
+      if (colorByField === "meta_uncertainty" && selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty
+        && d.node_id in uncertaintyDict) {
+         return 5;
+      }
+      return 0;
+    },
+    modelMatrix: modelMatrix,
+    updateTriggers: {
+      getSourcePosition: [detailed_data, xType],
+      getTargetPosition: [detailed_data, xType],
+      getWidth: [hoverInfo, selectedDetails.nodeDetails, uncertaintyDict, colorByField],
+      getColor: [selectedDetails.nodeDetails, uncertaintyDict, colorByField]
+    },
+  };
+
+  const uncertainty_line_layer_horiz_common_props = {
+    getSourcePosition: (d) => [getX(d), d.y],
+    getTargetPosition: (d) => [d.parent_x, d.y],
+    getColor: (d) => (colorByField === "meta_uncertainty" && selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty
+      && (d.node_id in uncertaintyDict && !(d === uncertaintyDict.lca)))
+      ? [0, 255, 0, 255] : [0, 0, 0, 0],
+    pickable: true,
+    widthUnits: "pixels",
+    getWidth: (d) => {
+      if (colorByField === "meta_uncertainty" && selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty
+        && d.node_id in uncertaintyDict) {
+        return 6;
+      }
+      return 6;
+    },
+    onHover: (info) => setHoverInfo(info),
+    modelMatrix: modelMatrix,
+    updateTriggers: {
+      getSourcePosition: [detailed_data, xType],
+      getTargetPosition: [detailed_data, xType],
+      getWidth: [hoverInfo, selectedDetails.nodeDetails, uncertaintyDict, colorByField],
+      getColor: [selectedDetails.nodeDetails, uncertaintyDict, colorByField]
+    },
+  };
+
 
   if (detailed_data.nodes) {
     const main_scatter_layer = new ScatterplotLayer({
@@ -245,17 +378,7 @@ const useLayers = ({
       ...scatter_layer_common_props,
       id: "fillin-scatter",
       data: minimap_scatter_data,
-      getFillColor: (d) => {
-        if (colorByField === "meta_uncertainty") {
-          if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty && selectedDetails.nodeDetails.meta_uncertainty.includes(d.name)) {
-            return [0, 255, 0];
-          } else {
-            return [180, 180, 180];
-          }
-        } else {
-          return toRGB(getNodeColorField(d, base_data));
-        }
-      }
+      getFillColor: (d) => toRGB(getNodeColorField(d, base_data)),
     });
 
     const main_line_layer = new LineLayer({
@@ -267,6 +390,17 @@ const useLayers = ({
     const main_line_layer2 = new LineLayer({
       ...line_layer_vert_common_props,
       id: "main-line-vert",
+      data: detailed_data.nodes,
+    });
+
+    const unc_line_layer_horiz = new LineLayer({
+      ...uncertainty_line_layer_horiz_common_props,
+      id: "main-unc-line-horiz",
+      data: detailed_data.nodes,
+    });
+    const unc_line_layer_vert = new LineLayer({
+      ...uncertainty_line_layer_vert_common_props,
+      id: "main-unc-line-vert",
       data: detailed_data.nodes,
     });
 
@@ -294,7 +428,7 @@ const useLayers = ({
       stroked: true,
       modelMatrix,
 
-      getLineColor: [0, 0, 0],
+      getLineColor: [255, 0, 0],
       getPosition: (d) => {
         return [d[xType], d.y];
       },
@@ -353,7 +487,9 @@ const useLayers = ({
       fillin_scatter_layer,
       clade_label_layer,
       selectedLayer,
-      hoveredLayer
+      hoveredLayer,
+      unc_line_layer_horiz,
+      unc_line_layer_vert
     );
   }
 
@@ -363,7 +499,7 @@ const useLayers = ({
   if (
     data.data.nodes &&
     proportionalToNodesOnScreen <
-      0.8 * 10 ** settings.thresholdForDisplayingText
+    0.8 * 10 ** settings.thresholdForDisplayingText
   ) {
     const node_label_layer = new TextLayer({
       id: "main-text-node",
@@ -396,17 +532,7 @@ const useLayers = ({
     data: minimap_scatter_data,
     getPolygonOffset: ({ layerIndex }) => [0, -4000],
     getPosition: (d) => [getX(d), d.y],
-    getFillColor: (d) => {
-      if (colorByField === "meta_uncertainty") {
-        if (selectedDetails.nodeDetails && selectedDetails.nodeDetails.meta_uncertainty && selectedDetails.nodeDetails.meta_uncertainty.includes(d.name)) {
-          return [0, 255, 0];
-        } else {
-          return [180, 180, 180];
-        }
-      } else {
-        return toRGB(getNodeColorField(d, base_data));
-      }
-    },    
+    getFillColor: (d) => toRGB(getNodeColorField(d, base_data)),
     getRadius: 2,
     getLineColor: [100, 100, 100],
 
@@ -414,7 +540,7 @@ const useLayers = ({
     radiusUnits: "pixels",
     onHover: (info) => setHoverInfo(info),
     updateTriggers: {
-      getFillColor: [base_data, getNodeColorField, colorByField, selectedDetails],
+      getFillColor: [base_data, getNodeColorField, selectedDetails],
       getPosition: [minimap_scatter_data, xType],
     },
   });
@@ -532,52 +658,59 @@ const useLayers = ({
     });
   });
 
+
+  const uncertaintyCircleData = useMemo(() => {
+    if (!(data.data && data.data.nodeLookup)) {
+      return [];
+    }
+    const circleData = [];
+    let node;
+    for (const key of Object.keys(uncertaintyDict)) {
+      node = data.data.nodeLookup[key];
+      if (!node) {
+        continue;
+      }
+      console.log("lookup", node)
+      if (uncertaintyDict[node.node_id]) {
+        console.log("in the")
+        const normProb = uncertaintyDict[node.node_id];
+        circleData.push({
+          ...node,
+          r: Math.max(6, normProb*20),
+        })
+      }
+    }
+    return circleData;
+  }, [data.data, getX, selectedDetails, uncertaintyDict])
+
+  const extra_circled_nodes = uncertaintyCircleData;
   // circle specified nodes separately from search (e.g. for uncertainty metadata)
   const numSearches = searchSpec.length;
   const extra_circled_nodes_layer = new ScatterplotLayer({
-      data: extra_circled_nodes,
-      id: "main-extra-scatter",
-      getPosition: (d) => [d[xType], d.y],
-      getLineColor: search.getLineColor(numSearches),
-      getRadius: 5 + 2 * numSearches,
-      radiusUnits: "pixels",
-      lineWidthUnits: "pixels",
-      stroked: true,
-      wireframe: true,
-      getLineWidth: 1,
-      filled: true,
-      getFillColor: [255, 0, 0, 0],
-      modelMatrix: modelMatrix,
-      updateTriggers: {
-        getPosition: [xType],
-        getLineColor: numSearches
-      }
+    data: colorByField === "meta_uncertainty" ? extra_circled_nodes : [],
+    id: "main-extra-scatter",
+    getPosition: (d) => [getX(d), d.y],
+    getLineColor: [0,0,0],
+    getRadius: (d) => {
+      return d.r;
+    },
+    radiusUnits: "pixels",
+    lineWidthUnits: "pixels",
+    stroked: true,
+    getLineWidth: 1,
+    filled: true,
+    opacity: .1,
+    modelMatrix,
+    lineWidthScale: 2,
+    getFillColor: [0, 255, 0],
+    updateTriggers: {
+      getPosition: [xType],
+      getLineColor: numSearches,
+      getRadius: uncertaintyDict
+    }
   });
 
-  const extra_circled_nodes_mini_layer = new ScatterplotLayer({
-      data: extra_circled_nodes,
-      getPolygonOffset: ({ layerIndex }) => [0, -9000],
-      id: "mini-extra-circle-scatter",
-      getPosition: (d) => [d[xType], d.y],
-      getLineColor: search.getLineColor(numSearches),
-      getRadius: 5 + 2 * numSearches,
-      radiusUnits: "pixels",
-      lineWidthUnits: "pixels",
-      stroked: true,
-
-      wireframe: true,
-      getLineWidth: 1,
-      filled: false,
-      getFillColor: [255, 0, 0, 0],
-      updateTriggers: { 
-        getPosition: [xType],
-        getLineColor: numSearches
-      },
-  });
-  
-
-
-  layers.push(...search_layers, search_mini_layers);
+  layers.push(...search_layers, search_mini_layers, extra_circled_nodes_layer);
 
   layers.push(minimap_polygon_background);
   layers.push(minimap_line_horiz, minimap_line_vert, minimap_scatter);
