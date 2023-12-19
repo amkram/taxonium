@@ -4,6 +4,11 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import cssInjectedByJsPlugin from "vite-plugin-css-injected-by-js";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "stream/web": "stream-browserify"
+    }
+  },
   worker: {
     format: "umd",
   },
