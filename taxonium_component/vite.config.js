@@ -33,21 +33,18 @@ export default defineConfig({
     sourcemap: true,
 
     rollupOptions: {
-      // Make sure to externalize deps that shouldn't be bundled
-      external: [
-        "react",
-        "react-dom",
-        "react/jsx-runtime", // Important addition!
-        "prop-types",
-      ],
+      // Externalize react and all its subpaths (react-dom/client,
+      // react-dom/server, ...) so the consumer supplies a single React.
+      external: (id) =>
+        id === "prop-types" || /^react(-dom)?(\/|$)/.test(id),
 
       output: {
-        // Provide global variables to use in the UMD build
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-          "react/jsx-runtime": "jsxRuntime",
-          "prop-types": "PropTypes",
+        globals: (id) => {
+          if (id === "prop-types") return "PropTypes";
+          if (id === "react/jsx-runtime") return "jsxRuntime";
+          if (/^react-dom(\/|$)/.test(id)) return "ReactDOM";
+          if (/^react(\/|$)/.test(id)) return "React";
+          return id;
         },
         // Ensure chunking is handled properly
         manualChunks: undefined,
